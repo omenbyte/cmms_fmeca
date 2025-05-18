@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum Role {
+  TECH
+  MANAGER
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  role     Role   @default(TECH)
+
+  @@map("users")
+}
+
+model Equipment {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  failureModes FailureMode[]
+}
+
+model FailureMode {
+  id            Int    @id @default(autoincrement())
+  mode          String
+  severity      Int
+  occurrence    Int
+  detectability Int
+  rpi           Int
+  equipmentId   Int
+  equipment     Equipment @relation(fields: [equipmentId], references: [id])
+  histories     FmeaHistory[]
+  workOrders    WorkOrder[]
+}
+
+model FmeaHistory {
+  id            Int    @id @default(autoincrement())
+  failureModeId Int
+  severity      Int
+  occurrence    Int
+  detectability Int
+  rpi           Int
+  failureMode   FailureMode @relation(fields: [failureModeId], references: [id])
+}
+
+model WorkOrder {
+  id            Int    @id @default(autoincrement())
+  status        String @default("PENDING")
+  failureModeId Int
+  failureMode   FailureMode @relation(fields: [failureModeId], references: [id])
+
+  @@unique([failureModeId, status])
+}
