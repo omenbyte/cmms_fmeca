@@ -17,6 +17,7 @@ model User {
   email    String @unique
   password String
   role     Role   @default(TECH)
+  workOrders   WorkOrder[] @relation("TechWO")
 
   @@map("users")
 }
@@ -56,6 +57,8 @@ model WorkOrder {
   status        String @default("PENDING")
   failureModeId Int
   failureMode   FailureMode @relation(fields: [failureModeId], references: [id])
+  assignedToId Int?      
+  assignedTo   User?     @relation("TechWO", fields: [assignedToId], references: [id])
 
   @@unique([failureModeId, status])
 }
