@@ -1,6 +1,7 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import Link from 'next/link';
 
 interface TaskDto {
   id:string;
@@ -27,6 +28,11 @@ export default function TasksPage(){
               <td>{t.description}</td>
               <td>{t.priority}</td>
               <td>{t.fmecaRow.rpi}</td>
+              <td>
+                <Link className="text-blue-600 underline" href={`/tech/report/${t.id}`}>
+                    Report
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>
