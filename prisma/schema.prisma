@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,58 +8,64 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-enum Role {
-  TECH
-  MANAGER
-}
-
-model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  role     Role   @default(TECH)
-  workOrders   WorkOrder[] @relation("TechWO")
-
-  @@map("users")
-}
-
 model Equipment {
-  id   Int    @id @default(autoincrement())
-  name String
-
-  failureModes FailureMode[]
+  id          String      @id @default(uuid())
+  name        String
+  area        String?
+  description String?
+  fmecaRows   FmecaRow[]
+  workOrders  WorkOrder[]
 }
 
-model FailureMode {
-  id            Int    @id @default(autoincrement())
-  mode          String
-  severity      Int
-  occurrence    Int
-  detectability Int
-  rpi           Int
-  equipmentId   Int
-  equipment     Equipment @relation(fields: [equipmentId], references: [id])
-  histories     FmeaHistory[]
-  workOrders    WorkOrder[]
-}
-
-model FmeaHistory {
-  id            Int    @id @default(autoincrement())
-  failureModeId Int
-  severity      Int
-  occurrence    Int
-  detectability Int
-  rpi           Int
-  failureMode   FailureMode @relation(fields: [failureModeId], references: [id])
+model FmecaRow {
+  id          String    @id @default(uuid())
+  equipmentId String
+  failureMode String
+  effect      String
+  severity    Int
+  occurrence  Int
+  detection   Int
+  rpi         Int
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  tasks       Task[]
 }
 
 model WorkOrder {
-  id            Int    @id @default(autoincrement())
-  status        String @default("PENDING")
-  failureModeId Int
-  failureMode   FailureMode @relation(fields: [failureModeId], references: [id])
-  assignedToId Int?      
-  assignedTo   User?     @relation("TechWO", fields: [assignedToId], references: [id])
+  id          String     @id @default(uuid())
+  title       String
+  status      String     @default("IN_PROGRESS")
+  createdAt   DateTime   @default(now())
+  scheduledAt DateTime?
+  equipmentId String?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id])
+  tasks       Task[]
+}
 
-  @@unique([failureModeId, status])
+model Task {
+  id          String     @id @default(uuid())
+  woId        String?
+  fmecaRowId  String?
+  description String
+  priority    Int
+  createdAt   DateTime   @default(now())
+  wo          WorkOrder? @relation(fields: [woId], references: [id])
+  fmecaRow    FmecaRow?  @relation(fields: [fmecaRowId], references: [id])
+  reports     Report[]
+  assignedTo  String?
+}
+
+model Report {
+  id               String @id @default(uuid())
+  taskId           String
+  notes            String
+  timeSpentMinutes Int
+  imagesJson       String @default("{}")
+  task             Task   @relation(fields: [taskId], references: [id])
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+  role     String // "TECH" or "MANAGER"
 }

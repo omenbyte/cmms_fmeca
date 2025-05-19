@@ -1,11 +1,26 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from '@prisma/client';
+import { computeRpi } from './rpi';
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export const prisma = new PrismaClient();
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query"] : ["error"],
-  });
+// Recompute RPI after a report is created
+prisma.$use(async (params, next) => {
+  const result = await next(params);
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+  if (params.model === Prisma.ModelName.Report && params.action === 'create') {
+    const taskId = result.taskId as string;
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { fmecaRow: true }
+    });
+    if (task?.fmecaRow) {
+      const { severity, occurrence, detection } = task.fmecaRow;
+      const newRpi = computeRpi(severity, occurrence, detection);
+      await prisma.fmecaRow.update({
+        where: { id: task.fmecaRow.id },
+        data: { rpi: newRpi }
+      });
+    }
+  }
+  return result;
+});
